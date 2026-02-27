@@ -1,0 +1,24 @@
+# Wocabee Bot Configuration
+# Please edit the following settings according to your needs. Make sure to keep the structure of the file intact.
+# If you do not wish to use ntfy, simple leave it empty or remove the ntfy_server, ntfy_topic and ntfy_token settings.
+# Note: The wordlist_file and picture_file should be in JSON format, with the structure defined in the documentation.
+# 
+# Base URL of the target application
+urlbase = "https://wocabee.app/"
+
+# Debug port for CDP connection
+debug_port = "http://localhost:9222"
+
+# Path to word mapping file (JSON format)
+wordlist_file = "wordlist.json"
+
+# Path to picture mapping file (JSON format)
+picture_file = "picturelist.json"
+
+# Words to skip/ignore during translation, dont change this unless you know what you are doing
+placeholder_words = ["", "translate", "check"]
+
+# NTFY notification settings
+ntfy_server = "https://example.ntfy.server"
+ntfy_topic = "wocabee-bot"
+ntfy_token = "secret_token_here"

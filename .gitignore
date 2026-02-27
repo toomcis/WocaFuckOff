@@ -1,0 +1,5 @@
+# Local config (DO NOT COMMIT)
+config.toml
+
+# Optional: env files
+.env
