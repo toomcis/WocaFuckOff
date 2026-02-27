@@ -585,7 +585,10 @@ with sync_playwright() as p:
         except Exception as e:
             # connection refused / no browser running - fall back to launching a fresh one
             print("CDP connection failed (", e, "), launching new browser instance")
-            browser = p.chromium.launch(headless=False)
+            browser = p.chromium.launch(
+                headless=False,
+                args=["--no-sandbox","--remote-debugging-port=9222"]
+            )
             context = browser.new_context()
             page = context.new_page()
             # if a URL was provided, navigate there so the bot has a page to work with
