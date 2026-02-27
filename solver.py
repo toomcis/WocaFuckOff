@@ -19,7 +19,7 @@ config_file = "config.toml"
 config = toml.load(config_file) if os.path.exists(config_file) else {}
 
 # ----------------- Variables -----------------
-URLBASE = args.url or os.environ.get("URLBASE") or config.get("urlbase", "wocabee.app/")
+URLBASE = args.url or os.environ.get("URLBASE") or config.get("urlbase", "wocabee.app/app")
 # Ensure URL starts with http:// or https://
 if not URLBASE.startswith(("http://", "https://")):
     URLBASE = "https://" + URLBASE
