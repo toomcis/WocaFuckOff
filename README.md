@@ -51,14 +51,21 @@ picture_file = "picturelist.json"
 
 **Local**
 
-- Start a Chromium instance with remote debugging enabled. Example (Linux/macOS) ! This only works when using chromium, brave or any other chromium based browser !:
+- There is a requirement of a chromium based browser, you can start it with your own chromium based browser or you can install a comparible one using playwright
+
+```bash
+python -m playwright install-depo
+```
+
+- To start it manually (With chromium already opened) you can do this specific command:
 
 ```bash
 # launch chrome/chromium with remote debugging port 9222
 google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/wocabee-profile
 ```
 
-- Then run the bot (examples):
+- If you do not have a chromium currently opened sucesfully, the script will automatically try to open it with the correct arguments
+- Running the bot:
 
 ```bash
 # explicit URL

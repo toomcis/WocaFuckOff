@@ -1,5 +1,9 @@
 # Local config (DO NOT COMMIT)
 config.toml
 
+# Local files needed for functioning locally or smthing idk
+.vscode
+.venv
+
 # Optional: env files
 .env
