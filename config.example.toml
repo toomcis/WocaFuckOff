@@ -4,7 +4,7 @@
 # Note: The wordlist_file and picture_file should be in JSON format, with the structure defined in the documentation.
 # 
 # Base URL of the target application
-urlbase = "https://wocabee.app/"
+urlbase = "https://wocabee.app/app"
 
 # Debug port for CDP connection
 debug_port = "http://localhost:9222"
@@ -17,6 +17,10 @@ picture_file = "picturelist.json"
 
 # Words to skip/ignore during translation, dont change this unless you know what you are doing
 placeholder_words = ["", "translate", "check"]
+
+# Login credentials
+username = "username_here"
+password = "password_here"
 
 # NTFY notification settings
 ntfy_server = "https://example.ntfy.server"
