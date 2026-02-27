@@ -24,7 +24,17 @@ URLBASE = args.url or os.environ.get("URLBASE") or config.get("urlbase", "wocabe
 if not URLBASE.startswith(("http://", "https://")):
     URLBASE = "https://" + URLBASE
 
-DEBUG_PORT = os.environ.get("DEBUG_PORT") or config.get("debug_port", "http://localhost:9222")
+# CDP debug port/url used to connect to an existing Chromium/Edge instance.  
+# Before running the bot you must start your browser with something like:
+#   chrome --remote-debugging-port=9222
+# or point DEBUG_PORT to a running instance.  The script now normalizes
+# simple port values and will fall back to launching its own browser when
+# connection is refused.
+DEBUG_PORT = os.environ.get("DEBUG_PORT") or config.get("debug_port", "http://127.0.0.1:9222")
+# some users may just provide a port number (e.g. "9222"), so normalize to a full URL
+if DEBUG_PORT and DEBUG_PORT.isdigit():
+    DEBUG_PORT = f"http://127.0.0.1:{DEBUG_PORT}"
+
 WORDLIST_FILE = os.environ.get("WORDLIST_FILE") or config.get("wordlist_file", "wordlist.json")
 PICTURE_FILE = os.environ.get("PICTURE_FILE") or config.get("picture_file", "picturelist.json")
 PLACEHOLDER_WORDS = {
@@ -564,12 +574,28 @@ def handle_find_pair(page):
 
 with sync_playwright() as p:
     try:
-        browser = p.chromium.connect_over_cdp(DEBUG_PORT)
-        context = browser.contexts[0]
-        page = find_target_page(context)
-        if not page:
-            raise RuntimeError(f"No open tab found containing '{URLBASE}'")
-        print("Attached to tab:", page.url)
+        # try to attach to an existing browser via CDP (remote debugging)
+        try:
+            browser = p.chromium.connect_over_cdp(DEBUG_PORT)
+            context = browser.contexts[0]
+            page = find_target_page(context)
+            if not page:
+                raise RuntimeError(f"No open tab found containing '{URLBASE}'")
+            print("Attached to tab:", page.url)
+        except Exception as e:
+            # connection refused / no browser running - fall back to launching a fresh one
+            print("CDP connection failed (", e, "), launching new browser instance")
+            browser = p.chromium.launch(headless=False)
+            context = browser.new_context()
+            page = context.new_page()
+            # if a URL was provided, navigate there so the bot has a page to work with
+            if URLBASE:
+                # ensure we have a proper scheme
+                if not URLBASE.startswith(("http://", "https://")):
+                    page.goto("https://" + URLBASE)
+                else:
+                    page.goto(URLBASE)
+            print("Opened new browser, current URL:", page.url)
 
         while True:
             try:
