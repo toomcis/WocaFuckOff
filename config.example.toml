@@ -18,6 +18,17 @@ picture_file = "picturelist.json"
 # Words to skip/ignore during translation, dont change this unless you know what you are doing
 placeholder_words = ["", "translate", "check"]
 
+# These variables are for controlling which class and package is automatically clicked on startup
+class_index = 0
+package_index = 0
+
+# These variables control how many points the bot should reach before stopping, and when to send milestone reminders
+addon_points = 1000
+milestone_reminder = 10
+
+# Make this true if you want to have double points enabled by default
+double_points = false
+
 # Login credentials
 username = "username_here"
 password = "password_here"

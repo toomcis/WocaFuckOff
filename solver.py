@@ -37,6 +37,10 @@ if DEBUG_PORT and DEBUG_PORT.isdigit():
 
 WORDLIST_FILE = os.environ.get("WORDLIST_FILE") or config.get("wordlist_file", "wordlist.json")
 PICTURE_FILE = os.environ.get("PICTURE_FILE") or config.get("picture_file", "picturelist.json")
+
+addon_points = os.environ.get("ADDON_POINTS") or config.get("addon_points", 0)
+milestone_reminder = os.environ.get("MILESTONE_REMINDER") or config.get("milestone_reminder", 1000)
+
 PLACEHOLDER_WORDS = {
     w.strip() for w in (
         os.environ.get("PLACEHOLDER_WORDS")
@@ -70,7 +74,7 @@ def notify_ntfy(title: str, message: str):
 
 # ---------------- LOAD DATA ----------------
 
-notify_ntfy("Wocabee Bot Started", "The bot has been started and is attempting to connect.")
+notify_ntfy("Wocabee Bot Started", f"The bot has been started and is connecting into the browser, estimated time until finished = {addon_points * 1.75} seconds")
 
 if os.path.exists(WORDLIST_FILE):
     with open(WORDLIST_FILE, "r", encoding="utf-8") as f:
@@ -112,27 +116,6 @@ def normalize(text: str) -> str:
     text = text.strip().lower()
     text = strip_accents(text)
     return text
-
-def translate_fallback(word: str) -> str:
-    if not word:
-        return ""
-    try:
-        r = requests.post(
-            "https://libretranslate.de/translate",
-            data={
-                "q": word,
-                "source": "sk",
-                "target": "en",
-                "format": "text"
-            },
-            timeout=5
-        )
-        r.raise_for_status()
-        json_resp = r.json()
-        return json_resp.get("translatedText", "")
-    except Exception as e:
-        print("Translation API failed:", e)
-        return ""
 
 def find_target_page(context):
     for page in context.pages:
@@ -572,6 +555,8 @@ def handle_find_pair(page):
 
 # ------------- Main Loop -------------
 
+StopBot = False
+
 with sync_playwright() as p:
     try:
         # try to attach to an existing browser via CDP (remote debugging)
@@ -599,6 +584,11 @@ with sync_playwright() as p:
                 else:
                     page.goto(URLBASE)
             print("Opened new browser, current URL:", page.url)
+        
+        original_points = int(page.locator("#WocaPoints").inner_text().strip())
+        last_milestone = original_points  # store the last milestone notified
+
+        one_time = time.time()
 
         while True:
             try:
@@ -642,7 +632,40 @@ with sync_playwright() as p:
                 if handle_find_pair(page):
                     page.wait_for_timeout(400)
                     continue
+                
+                points_locator = page.locator("#WocaPoints")
 
+                if points_locator.count() > 0 and points_locator.is_visible():
+                    points = int(points_locator.inner_text().strip())
+                else:
+                    print("#WocaPoints not present — probably returned to standard view")
+                    notify_ntfy("Wocabee Bot Finished", "Bot has stopped because it seems to have returned to standard view. The browser will now close.")
+                    notify_ntfy("Wocabee Bot Final Report", f"Final points: {original_points + addon_points} (original: {original_points}, addon: {addon_points}) | Total time running: {int(time.time() - one_time)} seconds")
+                    exit(0)
+
+                # inside your loop, after updating `points`:
+                while points >= last_milestone + milestone_reminder:
+                    last_milestone += milestone_reminder
+                    notify_ntfy(
+                        "Wocabee Bot Progress Report",
+                        f"Current points: {points} (original: {original_points}, target: {original_points + addon_points})"
+                    )
+                
+                if points >= original_points + addon_points:
+                    notify_ntfy("Wocabee Bot reached the target", f"Wocabee Bot has reached the target of {points} points (original: {original_points}, addon: {addon_points}), stopping and saving!")
+                    StopBot = True
+                
+                if StopBot:
+                    page.wait_for_selector("#backBtn", timeout=5000)
+                    page.click("#backBtn")
+                    try:
+                        page.wait_for_selector("#standardView", state="visible", timeout=15000)
+                        notify_ntfy("Wocabee Bot Finished", "Bot has stopped and returned to standard view. The browser will now safely close.")
+                        break
+                    except Exception as e:
+                        notify_ntfy("Wocabee Bot Error", f"Failed to load #standardView after clicking back. Exiting anyway. Error: {e}")
+                        break
+                
                 # 3. TRANSLATE INPUT
                 question_span = page.locator("#q_word")
                 if question_span.count() > 0 and question_span.is_visible():
@@ -662,6 +685,8 @@ with sync_playwright() as p:
                     continue
 
                 time.sleep(0.1)
+                
+                
 
             except Exception as e_inner:
                 tb = traceback.format_exc()
