@@ -1,4 +1,4 @@
-# Wocabee Bot
+# WocaFuckOff
 
 ![logo](assets/logo.png)
 
