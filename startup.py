@@ -16,12 +16,12 @@ def load_config(path=CONFIG_FILE):
 
 def main():
     cfg = load_config()
-    headless = cfg.get("headless", False)
+    headless = bool(cfg.get("headless", False))
     username = cfg.get("username", "")
     password = cfg.get("password", "")
-    double_points = cfg.get("double_points", False)
-    class_index = cfg.get("class_index", 0)
-    package_index = cfg.get("package_index", 0)
+    double_points = bool(cfg.get("double_points", False))
+    class_index = int(cfg.get("class_index", 0))
+    package_index = int(cfg.get("package_index", 0))
     urlbase = cfg.get("urlbase", "https://wocabee.app/app")
 
     if not username or not password:
