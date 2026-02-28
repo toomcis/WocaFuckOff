@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from playwright.sync_api import sync_playwright
 import time
 import random
@@ -487,7 +488,6 @@ def handle_one_out_of_many(page):
     if question in PLACEHOLDER_WORDS:
         return False
 
-    print("OneOutOfMany Question:", question_raw)
     answer = get_answer_auto_update(question)
     if not answer:
         print("OneOutOfMany: answer not found")
@@ -501,7 +501,7 @@ def handle_one_out_of_many(page):
         choice_text = normalize(choice_elem.inner_text())
         if choice_text == answer:
             time.sleep(random.uniform(0.05, 0.2))
-            print("Clicking answer:", choice_text)
+            print("OneOutOfMany answered:", choice_text)
             choice_elem.click()
             return True
 
@@ -674,7 +674,7 @@ with sync_playwright() as p:
                     if word in PLACEHOLDER_WORDS:
                         time.sleep(0.1)
                         continue
-                    print("Word:", word_raw)
+                    print("TranslateWord answered:", word_raw)
                     answer = get_answer_auto_update(word)
                     if answer:
                         answer_input = page.locator("#translateWordAnswer")

@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
-"""Startup helper: launch Chromium with remote debugging and autofill login.
-
-Reads `config.toml` for `username`, `password` and `urlbase`, starts a
-Chromium/Chrome binary with `--remote-debugging-port=9222`, then connects
-using Playwright CDP to navigate to the site and fill `#login` and `#password`.
-"""
 import os
-import time
 import sys
 import toml
-import shutil
 from playwright.sync_api import sync_playwright
 import subprocess
 
 CONFIG_FILE = "config.toml"
-
 
 def load_config(path=CONFIG_FILE):
     if not os.path.exists(path):
