@@ -16,6 +16,7 @@ def load_config(path=CONFIG_FILE):
 
 def main():
     cfg = load_config()
+    headless = cfg.get("headless", False)
     username = cfg.get("username", "")
     password = cfg.get("password", "")
     double_points = cfg.get("double_points", False)
@@ -93,7 +94,7 @@ def main():
     p = sync_playwright().start()
 
     browser = p.chromium.launch(
-        headless=False,
+        headless=headless,
         args=[
             "--no-sandbox",
             "--remote-debugging-port=9222"

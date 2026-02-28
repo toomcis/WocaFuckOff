@@ -26,6 +26,9 @@ package_index = 0
 addon_points = 1000
 milestone_reminder = 10
 
+# This variable is used to determine if this is supposed to be ran as headless or not
+headless = true
+
 # Make this true if you want to have double points enabled by default
 double_points = false
 
