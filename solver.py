@@ -39,8 +39,8 @@ if DEBUG_PORT and DEBUG_PORT.isdigit():
 WORDLIST_FILE = os.environ.get("WORDLIST_FILE") or config.get("wordlist_file", "wordlist.json")
 PICTURE_FILE = os.environ.get("PICTURE_FILE") or config.get("picture_file", "picturelist.json")
 
-addon_points = os.environ.get("ADDON_POINTS") or config.get("addon_points", 0)
-milestone_reminder = os.environ.get("MILESTONE_REMINDER") or config.get("milestone_reminder", 1000)
+addon_points = int(os.environ.get("ADDON_POINTS") or config.get("addon_points", 0))
+milestone_reminder = int(os.environ.get("MILESTONE_REMINDER") or config.get("milestone_reminder", 1000))
 
 PLACEHOLDER_WORDS = {
     w.strip() for w in (
