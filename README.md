@@ -44,7 +44,7 @@ python -m playwright install
   - `username` / `password` — Username and password for wocabee account
   - `ntfy_server`, `ntfy_topic`, `ntfy_token` — optional notifications
 
-Example config snippet (see [config.toml](config.toml) for the full file):
+Example config snippet (see the example [config.toml](config.example.toml) for the full file):
 
 ```toml
 urlbase = "https://wocabee.app/app"
