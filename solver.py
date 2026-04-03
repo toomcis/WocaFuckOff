@@ -238,7 +238,7 @@ def handle_choose_picture(page):
                 page.evaluate("(el) => el.click()", el_handle)
                 time.sleep(0.05)
                 page.evaluate("(el) => el.click()", el_handle)
-                print(f"ChoosePicture: clicked '{target_word}'")
+                print(f"ChoosePicture: clicked correct image for '{target_word}' | Current points:", page.locator("#WocaPoints").inner_text().strip())
                 return True
         else:
             # click next if possible, else prev
@@ -280,7 +280,7 @@ def handle_describe_picture(page):
     page.keyboard.type(answer, delay=random.randint(60, 120))
     submit_elem.click()
 
-    print("DescribePicture answered:", answer)
+    print("DescribePicture answered:", answer, "| Current points:", page.locator("#WocaPoints").inner_text().strip())
     return True
 
 # ---------------- One-Out-Of-Many Handler ----------------
@@ -319,7 +319,7 @@ def handle_translate_falling_word(page):
         elapsed += 0.05
 
     submit_elem.click()
-    print(f"TranslateFallingWord answered: {answer}")
+    print("TranslateFallingWord answered:", answer, "| Current points:", page.locator("#WocaPoints").inner_text().strip())
     return True
 
 def handle_choose_word(page):
@@ -336,7 +336,7 @@ def handle_choose_word(page):
     question_raw = question_elem.inner_text()
     question = normalize(question_raw)
 
-    print("ChooseWord Question:", question_raw)
+    print("ChooseWord Question:", question_raw, "| Current points:", page.locator("#WocaPoints").inner_text().strip())
 
     # get expected answer (auto handles reverse)
     raw_answer = get_answer_auto_update(question)
@@ -360,7 +360,7 @@ def handle_choose_word(page):
                 handle = btn.element_handle()
                 if handle:
                     page.evaluate("(el) => el.click()", handle)
-                    print("ChooseWord: clicked", btn_text_raw)
+                    print("ChooseWord: clicked", btn_text_raw, "| Current points:", page.locator("#WocaPoints").inner_text().strip())
                     clicked = True
                     break
 
@@ -476,7 +476,7 @@ def handle_complete_word(page):
         time.sleep(random.uniform(0.1, 0.3))
         submit_handle = submit_elem.element_handle()
         if submit_handle:
-            print("Clicking CompleteWord submit button")
+            print("Clicking CompleteWord submit button | Current points:", page.locator("#WocaPoints").inner_text().strip())
             page.evaluate("(el) => el.click()", submit_handle)
     else:
         print("Submit button not ready yet, skipping for now")
@@ -510,7 +510,7 @@ def handle_one_out_of_many(page):
         choice_text = normalize(choice_elem.inner_text())
         if choice_text == answer:
             time.sleep(random.uniform(0.05, 0.2))
-            print("OneOutOfMany answered:", choice_text)
+            print("OneOutOfMany answered:", choice_text, "| Current points:", page.locator("#WocaPoints").inner_text().strip())
             choice_elem.click()
             return True
 
@@ -590,6 +590,7 @@ def handle_incorrect_autolearn(page):
                 with open(WORDLIST_FILE, "w", encoding="utf-8") as f:
                     json.dump(WORD_TABLE, f, ensure_ascii=False, indent=2)
                 print(f"Auto-learned: '{correct_question}' -> '{correct_answer}'")
+                notify_ntfy("Wocabee Bot Auto-Learned", f"Learned new word: '{correct_question}' -> '{correct_answer}'")
             else:
                 print(f"Auto-learn: '{correct_question}' already known, skipping")
 
@@ -597,7 +598,7 @@ def handle_incorrect_autolearn(page):
         next_btn = page.locator("#incorrect-next-button")
         if next_btn.count() > 0 and next_btn.is_visible():
             next_btn.click()
-            print("Auto-learn: clicked next button")
+            print("Auto-learn: clicked next button | Current points:", page.locator("#WocaPoints").inner_text().strip())
             return True
 
     except Exception as e:
@@ -703,12 +704,14 @@ with sync_playwright() as p:
                 # inside your loop, after updating `points`:
                 while points >= last_milestone + milestone_reminder:
                     last_milestone += milestone_reminder
+                    print(f"Milestone reached: {points} points (original: {original_points}, addon: {addon_points})")
                     notify_ntfy(
                         "Wocabee Bot Progress Report",
                         f"Current points: {points} (original: {original_points}, target: {original_points + addon_points})"
                     )
                 
                 if points >= original_points + addon_points and addon_points != -1:
+                    print(f"Target reached: {points} points (original: {original_points}, addon: {addon_points}), stopping bot")
                     notify_ntfy("Wocabee Bot reached the target", f"Wocabee Bot has reached the target of {points} points (original: {original_points}, addon: {addon_points}), stopping and saving!")
                     StopBot = True
                 
@@ -731,7 +734,7 @@ with sync_playwright() as p:
                     if word in PLACEHOLDER_WORDS:
                         time.sleep(0.1)
                         continue
-                    print("TranslateWord answered:", word_raw)
+                    print("TranslateWord answered:", word_raw, " | Current points:", points)
                     answer = get_answer_auto_update(word)
                     if answer:
                         answer_input = page.locator("#translateWordAnswer")
