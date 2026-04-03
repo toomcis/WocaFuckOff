@@ -51,6 +51,7 @@ PLACEHOLDER_WORDS = {
 NTFY_SERVER = (os.environ.get("NTFY_SERVER") or config.get("ntfy_server") or "").strip() or None
 NTFY_TOPIC  = (os.environ.get("NTFY_TOPIC")  or config.get("ntfy_topic")  or "").strip() or None
 NTFY_TOKEN  = (os.environ.get("NTFY_TOKEN")  or config.get("ntfy_token")  or "").strip() or None
+HEADLESS    = str(os.environ.get("HEADLESS") or config.get("headless", False)).lower() in ("true", "1", "yes")
 
 if not URLBASE or not DEBUG_PORT:
     print("Error: URLBASE and DEBUG_PORT must be set via environment variables, config.toml, or CLI arguments.")
@@ -147,9 +148,17 @@ def get_answer_auto_update(word: str) -> str:
                 if normalize(en) == w:
                     return sk
 
-    # Manual fallback
+    # Headless mode: use the word itself as the answer so the bot can still
+    # submit something. The incorrect-autolearn handler will then capture the
+    # real mapping from the #incorrect feedback div.
+    if HEADLESS:
+        print(f"Headless mode — unknown word '{word}', submitting as-is for auto-learn")
+        return word
+
+    # Manual fallback (interactive mode only)
     answer = input(f"Enter translation for unknown word '{word}': ").strip()
     if answer:
+        answer = normalize(answer)
         WORD_TABLE[normalized_word] = answer
         with open(WORDLIST_FILE, "w", encoding="utf-8") as f:
             json.dump(WORD_TABLE, f, ensure_ascii=False, indent=2)
@@ -553,6 +562,49 @@ def handle_find_pair(page):
 
     return True
 
+# ---------------- Incorrect Auto-Learn Handler ----------------
+
+def handle_incorrect_autolearn(page):
+    """
+    When the #incorrect feedback div is visible, read the correct question/answer
+    from the DOM, save the mapping into wordlist.json, then click the 'next' button.
+    Works in both headless and interactive mode.
+    """
+    incorrect_div = page.locator("#incorrect")
+    if incorrect_div.count() == 0 or not incorrect_div.is_visible():
+        return False
+
+    try:
+        correct_question_elem = incorrect_div.locator(".correctWordQuestion")
+        correct_answer_elem   = incorrect_div.locator(".correctWordAnswer")
+
+        if correct_question_elem.count() == 0 or correct_answer_elem.count() == 0:
+            return False
+
+        correct_question = normalize(correct_question_elem.inner_text().strip())
+        correct_answer   = normalize(correct_answer_elem.inner_text().strip())
+
+        if correct_question and correct_answer:
+            if correct_question not in WORD_TABLE:
+                WORD_TABLE[correct_question] = correct_answer
+                with open(WORDLIST_FILE, "w", encoding="utf-8") as f:
+                    json.dump(WORD_TABLE, f, ensure_ascii=False, indent=2)
+                print(f"Auto-learned: '{correct_question}' -> '{correct_answer}'")
+            else:
+                print(f"Auto-learn: '{correct_question}' already known, skipping")
+
+        # Click the next button to continue
+        next_btn = page.locator("#incorrect-next-button")
+        if next_btn.count() > 0 and next_btn.is_visible():
+            next_btn.click()
+            print("Auto-learn: clicked next button")
+            return True
+
+    except Exception as e:
+        print("handle_incorrect_autolearn error:", e)
+
+    return False
+
 # ------------- Main Loop -------------
 
 StopBot = False
@@ -592,6 +644,11 @@ with sync_playwright() as p:
 
         while True:
             try:
+                # 0. Handle incorrect feedback — auto-learn and advance
+                if handle_incorrect_autolearn(page):
+                    page.wait_for_timeout(400)
+                    continue
+
                 # 1. Handle one-out-of-many
                 if handle_one_out_of_many(page):
                     page.wait_for_timeout(400)
@@ -651,7 +708,7 @@ with sync_playwright() as p:
                         f"Current points: {points} (original: {original_points}, target: {original_points + addon_points})"
                     )
                 
-                if points >= original_points + addon_points:
+                if points >= original_points + addon_points and addon_points != -1:
                     notify_ntfy("Wocabee Bot reached the target", f"Wocabee Bot has reached the target of {points} points (original: {original_points}, addon: {addon_points}), stopping and saving!")
                     StopBot = True
                 
